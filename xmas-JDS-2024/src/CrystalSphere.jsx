@@ -1,6 +1,7 @@
 import React,{useRef} from "react";
-import { Canvas,useFrame } from "@react-three/fiber";
-import { Environment, OrbitControls, Sphere, Circle, useGLTF } from "@react-three/drei";
+import { Canvas,useFrame, useLoader } from "@react-three/fiber";
+import { Environment, OrbitControls, Sphere, Circle, Box, useGLTF } from "@react-three/drei";
+import * as THREE from 'three';
 
 
 
@@ -8,6 +9,9 @@ import { Environment, OrbitControls, Sphere, Circle, useGLTF } from "@react-thre
 
 
 const CrystalSphere = () => {
+    const woodTexture = useLoader(THREE.TextureLoader, '/wood.png')
+    const snowTexture = useLoader(THREE.TextureLoader, '/snow.png')
+    const snow2Texture = useLoader(THREE.TextureLoader, '/snow2.png')
     const reactLogo = useGLTF('https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/tree-spruce/model.gltf')
     useGLTF.preload('https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/tree-spruce/model.gltf')
     console.log(reactLogo)
@@ -42,13 +46,20 @@ const CrystalSphere = () => {
                 />
             </Sphere>
             <Sphere args={[1.49, 64, 64, 0, Math.PI]} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                
+            <meshBasicMaterial map={snowTexture}/>
             </Sphere>
             <Circle args={[1.49, 64]} rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
-        
-      </Circle>
-            <Environment preset="night" />
+                <meshBasicMaterial map={snow2Texture}/>
+            </Circle>
             
+            <Box args={[2.8, .8, 2.8]} position={[0,-1.2,0]}>
+                <meshBasicMaterial
+                    color={"#633c14"}
+                    map={woodTexture}
+                />
+            </Box>
+            <Environment preset="night" />
+            <OrbitControls autoRotate={ false} />
             <primitive object={reactLogo.scene} scale={.05} position={[0, 0, 0]} />
             
                 </group>
