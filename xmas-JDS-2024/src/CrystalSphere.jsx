@@ -14,9 +14,16 @@ const CrystalSphere = () => {
     //reactLogo.scene.autoRotate = true;
     
     const reactLogoRef = useRef();
+    const groupRef = useRef();
+
+    useFrame(() => {
+        if (groupRef.current) {
+            groupRef.current.rotation.y+=0.01
+        }
+    })
     
     return (
-        <>
+        <group ref={groupRef}>
         <Sphere args={[1.5, 64, 64]} position={[0, 0, 0]}>
             <meshPhysicalMaterial
                 color={"#000"}
@@ -43,8 +50,8 @@ const CrystalSphere = () => {
             <Environment preset="night" />
             
             <primitive object={reactLogo.scene} scale={.05} position={[0, 0, 0]} />
-            <OrbitControls ref={reactLogoRef} autoRotate/>
-                </>
+            
+                </group>
     )
 }
 
