@@ -3,7 +3,7 @@ import {useRef, useMemo} from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { Environment, OrbitControls, Sphere, Circle, Box, useGLTF } from "@react-three/drei";
 import * as THREE from 'three';
-import { use } from "react";
+
 
 const SnowGlobeEffect = () => {
     const snowRef = useRef();
@@ -97,7 +97,7 @@ const CrystalSphere = () => {
 
     useFrame(() => {
         if (groupRef.current) {
-            groupRef.current.rotation.y+=0.01
+            groupRef.current.rotation.y+=0.005
         }
     })
     
