@@ -21,12 +21,14 @@ const StarrySky = () => {
         <Canvas
         camera={{position:[0,2,5]}}
         >
-            <directionalLight position={[10, 10, 10]} />
-            <pointLight position={[2, 2, 2]} intensity={1} color="white" />
-<pointLight position={[-2, -2, -2]} intensity={0.5} color="blue" />
+            <directionalLight position={[30, 70, 20]} intensity={1} />
+            
+            
+<pointLight position={[-2, -2, -2]} intensity={0.5} color={'white'} />
 
             <color attach="background" args={['#000011']} />
-            <Snow />
+            {/*<Snow />*/}
+
             <CrystalSphere />
             
 

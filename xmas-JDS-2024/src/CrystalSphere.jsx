@@ -1,88 +1,148 @@
 /* eslint-disable react/no-unknown-property */
-import {useRef, useMemo} from "react";
+import {useRef, useMemo, useState, useEffect} from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { Environment, OrbitControls, Sphere, Circle, Box, useGLTF } from "@react-three/drei";
 import * as THREE from 'three';
 
 
-const SnowGlobeEffect = () => {
+const SnowGlobeEffect = ({ extraSnowflakes }) => {
     const snowRef = useRef();
+    const particleCount = 250;
+    const maxParticles = particleCount + 500; // Preallocate buffer for 500 extra snowflakes
+    const [currentParticles, setCurrentParticles] = useState(particleCount);
+    const positions = useRef(new Float32Array(maxParticles * 3));
   
-    const snowParticles = useMemo(() => {
-        const particles = [];
-        const count = 2000; // Number of snowflakes
-        const radius = 1.45; // Slightly smaller than the inner sphere radius
+    // Initialize positions for the initial particles
+    useEffect(() => {
+      for (let i = 0; i < particleCount; i++) {
+        initializeParticle(i);
+      }
+    }, []);
+  
+    // Add extra snowflakes dynamically
+    useEffect(() => {
+        if (extraSnowflakes > 0) {
+          let added = 0;
+          const increment = 10; // Add 10 particles per frame
+          const interval = setInterval(() => {
+            const newParticleCount = Math.min(currentParticles + increment, maxParticles);
+            for (let i = currentParticles; i < newParticleCount; i++) {
+              initializeParticle(i); // Initialize new particles
+            }
+            setCurrentParticles(newParticleCount);
+            added += increment;
+            if (added >= extraSnowflakes || newParticleCount === maxParticles) clearInterval(interval);
+          }, 600000);
       
-        for (let i = 0; i < count; i++) {
-          // Random spherical coordinates
-          const theta = Math.random() * Math.PI * 2; // Random angle around the sphere
-          const phi = Math.acos(3 * Math.random() - 1); // Random angle for vertical distribution
-          const r = Math.cbrt(Math.random()) * radius; // Cubic root for uniform volume distribution
-      
-          // Convert spherical to Cartesian coordinates
-          const x = r * Math.sin(phi) * Math.cos(theta);
-          const y = r * Math.sin(phi) * Math.sin(theta);
-          const z = r * Math.cos(phi);
-      
-          // Add to particle array
-          particles.push(new THREE.Vector3(x, y, z));
+          return () => clearInterval(interval);
         }
-        return particles;
-      }, []);
+      }, [extraSnowflakes]);
+      
   
-      useFrame(() => {
+    // Initialize a single particle at the given index
+    const initializeParticle = (index) => {
+        const radius = 1.45; // Maximum radius of the globe
+        const r = Math.cbrt(Math.random()) * radius; // Uniform distribution within the sphere
+        const theta = Math.random() * Math.PI * 2; // Random angle around the sphere
+        const phi = Math.acos(1 - 2 * Math.random()); // Random vertical angle
+      
+        // Convert spherical to Cartesian coordinates
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta) + radius * 0.05; // Center particles in the top half
+        const z = r * Math.cos(phi);
+      
+        // Assign the calculated positions
+        positions.current[index * 3] = x;
+        positions.current[index * 3 + 1] = y;
+        positions.current[index * 3 + 2] = z;
+      };
+      
+      
+      
+  
+    // Animate the particles
+    useFrame(() => {
         if (!snowRef.current) return;
       
-        const positions = snowRef.current.geometry.attributes.position.array;
+        const posArray = positions.current;
+        const radius = 1.5; // Radius of the globe
       
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] -= 0.01; // Fall along Y-axis
+        for (let i = 0; i < currentParticles; i++) {
+          const x = posArray[i * 3];
+          const y = posArray[i * 3 + 1];
+          const z = posArray[i * 3 + 2];
       
-          const x = positions[i];
-          const y = positions[i + 1];
-          const z = positions[i + 2];
-          const radius = 1.5;
+          // Update positions: falling motion
+          posArray[i * 3 + 1] -= 0.01; // Snowflake falls along Y-axis
       
-          // Reset to random position when outside sphere
-          if (Math.sqrt(x * x + y * y + z * z) > radius) {
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-            const r = Math.cbrt(Math.random()) * radius;
-      
-            positions[i] = r * Math.sin(phi) * Math.cos(theta);
-            positions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
-            positions[i + 2] = r * Math.cos(phi);
+          // Check if the snowflake has exited the globe
+          const distanceFromCenter = Math.sqrt(x * x + y * y + z * z);
+          if (distanceFromCenter > radius || y < -radius) {
+            initializeParticle(i); // Reset particle position
           }
         }
       
+        // Notify Three.js of the updated positions
         snowRef.current.geometry.attributes.position.needsUpdate = true;
       });
+      
+      
+      
+      useFrame(() => {
+        const posArray = positions.current;
+      
+        for (let i = 0; i < currentParticles; i++) {
+          const x = posArray[i * 3];
+          const y = posArray[i * 3 + 1];
+          const z = posArray[i * 3 + 2];
+      
+          if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+            console.error(`Invalid particle at index ${i}: x=${x}, y=${y}, z=${z}`);
+            initializeParticle(i); // Reset invalid particle
+          }
+        }
+      });
+       
+  
     return (
       <points ref={snowRef}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={snowParticles.length}
-            array={new Float32Array(
-              snowParticles.flatMap((v) => [v.x, v.y, v.z])
-            )}
+            count={maxParticles}
+            array={positions.current}
             itemSize={3}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.03}
-          map={useLoader(THREE.TextureLoader, "/snowflake.png")} // Replace with your snowflake texture
+          size={0.07}
+          map={useLoader(THREE.TextureLoader, "/snowflake.png")}
           transparent
         />
       </points>
     );
   };
+  
+  
 
 
 
 
 const CrystalSphere = () => {
-    const woodTexture = useLoader(THREE.TextureLoader, '/wood.png')
+
+    const [extraSnowflakes, setExtraSnowflakes] = useState(0)
+    
+    
+    const handleShake = () => {
+        console.log('clicked!');
+        
+        setExtraSnowflakes((prev) => prev + 300); // Add 300 new snowflakes
+      };
+      
+  const woodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_diff_4k.jpg')
+  const normalWoodTexture =useLoader(THREE.TextureLoader, '/textures/pine_bark_nor_gl_4k.png')
+  const roughWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_rough_4k.png')
+  const dispWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_disp_4k.png')
     const snowTexture = useLoader(THREE.TextureLoader, '/snow.png')
     const snow2Texture = useLoader(THREE.TextureLoader, '/snow2.png')
     const star= useGLTF('https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/star/model.gltf')
@@ -102,17 +162,19 @@ const CrystalSphere = () => {
     })
     
     return (
-        <group ref={groupRef}>
-        <Sphere args={[1.5, 64, 64]} position={[0, 0, 0]}>
+      <group ref={groupRef} onClick={handleShake}>
+        
+        <pointLight intensity={1} color={"000"} />
+        <Sphere args={[1.5, 64, 64]} castShadow position={[0, 0, 0]}>
             <meshPhysicalMaterial
                 color={"#ce8fff"}
                 transparent
-                opacity={.2}
+                opacity={.25}
                 
-                roughness={.025}
-                metalness={1}
-                transmission={.55}
-                thickness={.5}
+                roughness={.05}
+                metalness={.05}
+                transmission={.05}
+                thickness={1.05}
                 ior={1.5}
                 clearcoat={1}
                 clearcoatRoughness={0}
@@ -120,24 +182,28 @@ const CrystalSphere = () => {
                 depthWrite={false}
                 />
             </Sphere>
-            <Sphere args={[1.49, 64, 64, 0, Math.PI]} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <Sphere args={[1.49, 64, 64, 0, Math.PI]} position={[0, 0, 0]} receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
             <meshBasicMaterial map={snowTexture}/>
             </Sphere>
-            <Circle args={[1.49, 64]} rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
+            <Circle args={[1.49, 64]} rotation={[Math.PI / -2, 0, 0]} castShadow position={[0, 0, 0]}>
                 <meshBasicMaterial map={snow2Texture}/>
             </Circle>
             
-                <SnowGlobeEffect />
-            <Box args={[2.8, .8, 2.8]} position={[0,-1.2,0]}>
-                <meshBasicMaterial
-                    color={"#633c14"}
-                    map={woodTexture}
+            <SnowGlobeEffect extraSnowflakes={ extraSnowflakes } />
+            <Box args={[2.8, .8, 2.8]} receiveShadow position={[0,-1.2,0]}>
+                <meshStandardMaterial
+                    
+            map={woodTexture}
+            normalMap={normalWoodTexture}
+            displacementMap={dispWoodTexture}
+            displacementScale={0}
+            roughnessMap={roughWoodTexture}
                 />
             </Box>
             <Environment preset="night" environmentIntensity={.2} />
             <OrbitControls autoRotate={false} />
             
-            <primitive object={reactLogo.scene} scale={.05} position={[0, 0, 0]} />
+            <primitive object={reactLogo.scene} scale={.05} castShadow position={[0, 0, 0]} />
             <primitive object={star.scene} scale={.15} position={[0, 1.35, -0.055]} />
             <pointLight position={[0,1.45,-0.06]} intensity={1} distance={1}/>
             <Sphere args={[.03, 32, 32]} position={[0.1, 1.02, 0]}>
@@ -146,10 +212,27 @@ const CrystalSphere = () => {
                     color={"#f00"}/>
                 <meshPhysicalMaterial
                     color={"#ff0000"}
-                    transmission={.55}
-                    metalness={2}
+                    transmission={.35}
+                    metalness={0}
                     roughness={.025}
-                    thickness={.5}
+                    thickness={.2}
+                    clearcoat={1}
+                    transparent
+                    opacity={.9}
+                    ior={1.5}
+                    envMapIntensity={1}
+                />
+        </Sphere>
+        <Sphere args={[.03, 32, 32]} position={[-0.01, .5, .17]}>
+                <pointLight
+                    intensity={.25}
+                    color={"#f00"}/>
+                <meshPhysicalMaterial
+                    color={"#ff0000"}
+                    transmission={.35}
+                    metalness={0}
+                    roughness={.025}
+                    thickness={.2}
                     clearcoat={1}
                     transparent
                     opacity={.9}
@@ -164,7 +247,7 @@ const CrystalSphere = () => {
                 <meshPhysicalMaterial
                     color={"#00ff00"}
                     transmission={.55}
-                    metalness={2}
+                    metalness={0}
                     roughness={.025}
                     thickness={.5}
                     clearcoat={1}
@@ -181,9 +264,26 @@ const CrystalSphere = () => {
                 <meshPhysicalMaterial
                     color={"#0000ff"}
                     transmission={.55}
-                    metalness={2}
+                    metalness={0}
                     roughness={.025}
                     thickness={.5}
+                    clearcoat={1}
+                    transparent
+                    opacity={.9}
+                    ior={1.5}
+                    envMapIntensity={1}
+                />
+        </Sphere>
+        <Sphere args={[.03, 32, 32]} position={[-0.01, .75, .15]}>
+                <pointLight
+                    intensity={.25}
+                    color={"#00f"}/>
+                <meshPhysicalMaterial
+                    color={"#f0f"}
+                    transmission={.35}
+                    metalness={0}
+                    roughness={.025}
+                    thickness={.2}
                     clearcoat={1}
                     transparent
                     opacity={.9}
@@ -198,7 +298,7 @@ const CrystalSphere = () => {
                 <meshPhysicalMaterial
                     color={"#00ff00"}
                     transmission={.55}
-                    metalness={2}
+                    metalness={0}
                     roughness={.025}
                     thickness={.5}
                     clearcoat={1}
