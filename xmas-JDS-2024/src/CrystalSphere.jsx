@@ -140,9 +140,9 @@ const CrystalSphere = () => {
       };
       
   const woodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_diff_4k.jpg')
-  const normalWoodTexture =useLoader(THREE.TextureLoader, '/textures/pine_bark_nor_gl_4k.png')
-  const roughWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_rough_4k.png')
-  const dispWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_disp_4k.png')
+  //const normalWoodTexture =useLoader(THREE.TextureLoader, '/textures/pine_bark_nor_gl_4k.png')
+  //const roughWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_rough_4k.png')
+  //const dispWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_disp_4k.png')
     const snowTexture = useLoader(THREE.TextureLoader, '/snow.png')
     const snow2Texture = useLoader(THREE.TextureLoader, '/snow2.png')
     const star= useGLTF('https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/star/model.gltf')
@@ -194,10 +194,9 @@ const CrystalSphere = () => {
                 <meshStandardMaterial
                     
             map={woodTexture}
-            normalMap={normalWoodTexture}
-            displacementMap={dispWoodTexture}
+            
             displacementScale={0}
-            roughnessMap={roughWoodTexture}
+            
                 />
             </Box>
             <Environment preset="night" environmentIntensity={.2} />
