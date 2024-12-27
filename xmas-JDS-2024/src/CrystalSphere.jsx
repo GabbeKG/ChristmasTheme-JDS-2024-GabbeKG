@@ -139,7 +139,7 @@ const CrystalSphere = () => {
         setExtraSnowflakes((prev) => prev + 300); // Add 300 new snowflakes
       };
       
-  const woodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_diff_4k.jpg')
+  const woodTexture = useLoader(THREE.TextureLoader, '/wood.png')
   //const normalWoodTexture =useLoader(THREE.TextureLoader, '/textures/pine_bark_nor_gl_4k.png')
   //const roughWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_rough_4k.png')
   //const dispWoodTexture = useLoader(THREE.TextureLoader, '/textures/pine_bark_disp_4k.png')
