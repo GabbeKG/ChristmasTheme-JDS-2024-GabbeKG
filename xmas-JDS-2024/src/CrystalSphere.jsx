@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unknown-property */
+
 import {useRef, useMemo, useState, useEffect} from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { Environment, OrbitControls, Sphere, Circle, Box, useGLTF } from "@react-three/drei";
