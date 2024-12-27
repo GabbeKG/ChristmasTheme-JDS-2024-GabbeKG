@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unknown-property */
+/* eslint-disable no-unused-vars */
 import React, { useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
